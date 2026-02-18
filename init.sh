@@ -161,11 +161,11 @@ pip install --no-cache-dir --force-reinstall \
 proxy-mcp-unpack-data
 
 # ---------------------------------------------------------------------------
-# Auto-configure .env (non-interactive: generates API_KEY, uses defaults)
+# Auto-configure .env (generates API_KEY, sets defaults — non-interactive)
 # ---------------------------------------------------------------------------
 proxy-mcp-configure-env --auto
 
-# Override port in .env if --port was provided
+# Override port in .env if --port was provided on command line
 if [[ -n "$PORT" ]]; then
     if grep -q "^SERVER_PORT=" .env 2>/dev/null; then
         sed -i "s|^SERVER_PORT=.*|SERVER_PORT=$PORT|" .env
@@ -173,6 +173,17 @@ if [[ -n "$PORT" ]]; then
         echo "SERVER_PORT=$PORT" >> .env
     fi
 fi
+
+# ---------------------------------------------------------------------------
+# Interactive configuration — user fills in server settings
+# Current .env values are shown as defaults; just press Enter to keep them.
+# ---------------------------------------------------------------------------
+echo ""
+echo "============================================"
+echo " Configure Proxy MCP settings"
+echo " (Press Enter to keep the current value)"
+echo "============================================"
+proxy-mcp-configure-env
 
 # ---------------------------------------------------------------------------
 # Install and start systemd service
