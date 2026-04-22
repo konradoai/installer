@@ -4,7 +4,7 @@ export PATH="/usr/local/bin:$PATH"
 
 # ---------------------------------------------------------------------------
 # Usage:
-#   bash <(curl -s https://raw.githubusercontent.com/konradoai/installer/main/init.sh) \
+#   bash <(curl -s https://raw.githubusercontent.com/konradoai/proxy-downloader/main/init.sh) \
 #       --api-key=<konrado_api_key> \
 #       --callback-url=<https://app.konrado.ai/api/integrations/servers/install>
 #
@@ -33,16 +33,34 @@ check_python_version() {
 
 # Find and return the best python executable (3.10+)
 get_python() {
-    for exe in python3.12 python3.11 python311 "/opt/alt/python311/bin/python3" python3.10 python3; do
-        py_path=$(command -v "$exe" 2>/dev/null)
-        if [[ -n "$py_path" ]]; then
-            found=$(check_python_version "$py_path" 2>/dev/null)
-            if [[ -n "$found" ]]; then
-                echo "$found"
-                return 0
-            fi
+    local candidates=()
+    local minor exe py_path found
+
+    for minor in 14 13 12 11 10; do
+        candidates+=(
+            "python3.$minor"
+            "python3$minor"
+            "/opt/alt/python3$minor/bin/python3"
+        )
+    done
+    candidates+=(python3 python)
+
+    for exe in "${candidates[@]}"; do
+        if [[ "$exe" == /* ]]; then
+            [[ -x "$exe" ]] || continue
+            py_path="$exe"
+        else
+            py_path=$(command -v "$exe" 2>/dev/null || true)
+            [[ -n "$py_path" ]] || continue
+        fi
+
+        found=$(check_python_version "$py_path" 2>/dev/null || true)
+        if [[ -n "$found" ]]; then
+            echo "$found"
+            return 0
         fi
     done
+
     echo "Error: Python 3.10 or newer is required." >&2
     return 1
 }
@@ -91,21 +109,6 @@ if [[ -z "$API_KEY" || -z "$CALLBACK_URL" ]]; then
     echo "      --callback-url=<https://app.konrado.ai/api/integrations/servers/install>"
     exit 1
 fi
-
-# ---------------------------------------------------------------------------
-# Platform detection
-# ---------------------------------------------------------------------------
-if [ -f /usr/sbin/plesk ]; then
-    PLATFORM="plesk"
-elif [ -d /usr/local/directadmin ]; then
-    PLATFORM="directadmin"
-elif [ -d /usr/local/cpanel ]; then
-    PLATFORM="cpanel"
-else
-    PLATFORM="linux"
-fi
-
-echo "Detected platform: $PLATFORM"
 
 # ---------------------------------------------------------------------------
 # System user / group
@@ -212,7 +215,6 @@ proxy-mcp-connect "${CONNECT_ARGS[@]}"
 echo ""
 echo "============================================"
 echo " Proxy MCP installed successfully"
-echo " Platform : $PLATFORM"
 echo " Service  : konrado-mcp-remote-agent.service"
 echo " Status   : $(systemctl is-active konrado-mcp-remote-agent.service 2>/dev/null || echo 'unknown')"
 echo "============================================"
