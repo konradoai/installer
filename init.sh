@@ -113,22 +113,22 @@ fi
 # ---------------------------------------------------------------------------
 # System user / group
 # ---------------------------------------------------------------------------
-if ! getent group proxy-mcp >/dev/null 2>&1; then
-    echo "Creating group 'proxy-mcp'..."
-    groupadd --system proxy-mcp
+if ! getent group konrado-mcp-remote-agent >/dev/null 2>&1; then
+    echo "Creating group 'konrado-mcp-remote-agent'..."
+    groupadd --system konrado-mcp-remote-agent
 else
-    echo "Group 'proxy-mcp' already exists."
+    echo "Group 'konrado-mcp-remote-agent' already exists."
 fi
 
-if ! getent passwd proxy-mcp >/dev/null 2>&1; then
-    echo "Creating user 'proxy-mcp'..."
-    useradd --system -g proxy-mcp --home-dir /opt/ProxyMcp --shell /bin/bash --create-home proxy-mcp
+if ! getent passwd konrado-mcp-remote-agent >/dev/null 2>&1; then
+    echo "Creating user 'konrado-mcp-remote-agent'..."
+    useradd --system -g konrado-mcp-remote-agent --home-dir /opt/KonradoAiRemoteAgent --shell /bin/bash --create-home konrado-mcp-remote-agent
 else
-    echo "User 'proxy-mcp' already exists."
+    echo "User 'konrado-mcp-remote-agent' already exists."
 fi
 
-if ! groups proxy-mcp | grep -q proxy-mcp; then
-    usermod -a -G proxy-mcp proxy-mcp
+if ! groups konrado-mcp-remote-agent | grep -q konrado-mcp-remote-agent; then
+    usermod -a -G konrado-mcp-remote-agent konrado-mcp-remote-agent
 fi
 
 # ---------------------------------------------------------------------------
@@ -140,13 +140,13 @@ if [[ -z "$PYTHON_EXE" ]]; then
 fi
 echo "Using Python: $PYTHON_EXE"
 
-"$PYTHON_EXE" -m venv /opt/ProxyMcp/.venv
+"$PYTHON_EXE" -m venv /opt/KonradoAiRemoteAgent/.venv
 
-chmod -R 750 /opt/ProxyMcp/
-chown -R proxy-mcp:proxy-mcp /opt/ProxyMcp/
+chmod -R 750 /opt/KonradoAiRemoteAgent/
+chown -R konrado-mcp-remote-agent:konrado-mcp-remote-agent /opt/KonradoAiRemoteAgent/
 
-cd /opt/ProxyMcp/
-source /opt/ProxyMcp/.venv/bin/activate
+cd /opt/KonradoAiRemoteAgent/
+source /opt/KonradoAiRemoteAgent/.venv/bin/activate
 
 # ---------------------------------------------------------------------------
 # Install package
@@ -156,17 +156,17 @@ pip install -U pip
 pip install --no-cache-dir --force-reinstall \
     --extra-index-url http://repo.konrado.ai:3141/konrado/dev/ \
     --trusted-host repo.konrado.ai \
-    ProxyMcp
+    KonradoAiRemoteAgent
 
 # ---------------------------------------------------------------------------
 # Unpack scripts / data
 # ---------------------------------------------------------------------------
-proxy-mcp-unpack-data
+konrado-mcp-remote-agent-unpack-data
 
 # ---------------------------------------------------------------------------
-# Auto-configure .env (generates API_KEY, sets defaults — non-interactive)
+# Auto-configure .env (generates API_KEY, sets defaults - non-interactive)
 # ---------------------------------------------------------------------------
-proxy-mcp-configure-env --auto
+konrado-mcp-remote-agent-configure-env --auto
 
 # Override port in .env if --port was provided on command line
 if [[ -n "$PORT" ]]; then
@@ -178,20 +178,9 @@ if [[ -n "$PORT" ]]; then
 fi
 
 # ---------------------------------------------------------------------------
-# Interactive configuration — user fills in server settings
-# Current .env values are shown as defaults; just press Enter to keep them.
-# ---------------------------------------------------------------------------
-echo ""
-echo "============================================"
-echo " Configure Proxy MCP settings"
-echo " (Press Enter to keep the current value)"
-echo "============================================"
-proxy-mcp-configure-env
-
-# ---------------------------------------------------------------------------
 # Install and start systemd service
 # ---------------------------------------------------------------------------
-bash /opt/ProxyMcp/scripts/install.sh
+bash /opt/KonradoAiRemoteAgent/scripts/install.sh
 
 # ---------------------------------------------------------------------------
 # Register integration with Konrado.AI backend
@@ -209,12 +198,12 @@ if [[ -n "$PORT" ]]; then
     CONNECT_ARGS+=("--port=$PORT")
 fi
 
-proxy-mcp-connect "${CONNECT_ARGS[@]}"
+konrado-mcp-remote-agent-connect "${CONNECT_ARGS[@]}"
 
 # ---------------------------------------------------------------------------
 echo ""
 echo "============================================"
-echo " Proxy MCP installed successfully"
+echo " Konrado AI Remote Agent installed successfully"
 echo " Service  : konrado-mcp-remote-agent.service"
 echo " Status   : $(systemctl is-active konrado-mcp-remote-agent.service 2>/dev/null || echo 'unknown')"
 echo "============================================"
